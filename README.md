@@ -10,8 +10,8 @@ A Rotary encoder changes frequency and pushing the button changes step.
 
 ## Dependencies
 
-ssd1306.py from https://github.com/kwankiu/ssd1306wrap/
-si5351.py from https://github.com/hwstar/Si5351_Micropython
+- ssd1306.py from https://github.com/kwankiu/ssd1306wrap/
+- si5351.py from https://github.com/hwstar/Si5351_Micropython
 
 ## Wiring
 
