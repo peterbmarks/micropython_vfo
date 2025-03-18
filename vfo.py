@@ -1,5 +1,7 @@
 # Si5351 VFO with rotary encoder and OLED display for RP2040 Zero
+# Updated: 20250318
 # Peter, VK3TPM, https://blog.marxy.org
+# Latest version: https://github.com/peterbmarks/micropython_vfo
 #
 # Uses i2c bus 1 which is SCL=3, SDA=2
 # 
@@ -7,7 +9,7 @@
 # GND, VCC, Switch, A, B
 # Note that the large font ssd1306 takes a while to load up on start
 
-from machine import Pin
+from machine import Pin, I2C
 import time
 import math
 import ssd1306 # https://github.com/kwankiu/ssd1306wrap/
@@ -19,10 +21,10 @@ CLKPin = Pin(26, Pin.IN, Pin.PULL_UP)  # A channel
 DTPin = Pin(27, Pin.IN, Pin.PULL_UP)   # B channel
 SWPin = Pin(28, Pin.IN, Pin.PULL_UP)   # Button (optional)
 
-from machine import I2C,Pin
-
+SDAPin = Pin(2)
+SCLPin = Pin(3)
 # For RP2040 Zero use pins 2 and 3 for I2C bus 1
-i2c = machine.I2C(1, scl=machine.Pin(3), sda=machine.Pin(2), freq=400000) # 400kHz
+i2c = machine.I2C(1, scl=SCLPin, sda=SDAPin, freq=400000) # 400kHz
 #i2c = machine.I2C(1)
 
 # Instantiate i2c objects
@@ -43,11 +45,18 @@ frequency = start_frequency
 
 def main():
     #print("started")
+    global CLKPin, SWPin
     clkgen.init(si5351.CRYSTAL_LOAD_0PF, 25000000, -4000)
     setFrequency(frequency)
     clkgen.output_enable(si5351.CLK0, True)
     clkgen.drive_strength(si5351.CLK0, si5351.DRIVE_2MA) # up to DRIVE_8MA
     oled_display(str(frequency))
+    # Attach interrupt to CLK pin (rising/falling edge)
+    # https://docs.micropython.org/en/latest/library/machine.Pin.html#machine.Pin.irq
+    # options: Pin.IRQ_RISING | Pin.IRQ_FALLING | Pin.IRQ_LOW_LEVEL | Pin.IRQ_HIGH_LEVEL
+    CLKPin.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=rotary_callback)
+    SWPin.irq(trigger=Pin.IRQ_FALLING, handler=button_callback)
+
     # Main loop
     while True:
         #print("Encoder Position:", encoder_position)
@@ -92,11 +101,6 @@ def rotary_callback(pin):
         oled_display(str(frequency))
         
         last_state = current_state
-    
-# Attach interrupt to CLK pin (rising/falling edge)
-# https://docs.micropython.org/en/latest/library/machine.Pin.html#machine.Pin.irq
-# options: Pin.IRQ_RISING | Pin.IRQ_FALLING | Pin.IRQ_LOW_LEVEL | Pin.IRQ_HIGH_LEVEL
-CLKPin.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=rotary_callback)
 
 # Optional: Detect button press
 def button_callback(pin):
@@ -104,9 +108,6 @@ def button_callback(pin):
     global frequency
     change_step()
     oled_display(str(frequency))
-    time.sleep(0.5) # try to avoid bounce
-
-SWPin.irq(trigger=Pin.IRQ_FALLING, handler=button_callback)
 
 def setFrequency(newFrequency):
     #print(newFrequency)
@@ -114,3 +115,4 @@ def setFrequency(newFrequency):
         
 if __name__ == "__main__":
     main()
+
