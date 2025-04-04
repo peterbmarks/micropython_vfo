@@ -1,7 +1,6 @@
 # Si5351 VFO with rotary encoder and OLED display for RP2040 Zero
 # Updated: 20250318
 # Peter, VK3TPM, https://blog.marxy.org
-# Latest version: https://github.com/peterbmarks/micropython_vfo
 #
 # Uses i2c bus 1 which is SCL=3, SDA=2
 # 
@@ -9,7 +8,7 @@
 # GND, VCC, Switch, A, B
 # Note that the large font ssd1306 takes a while to load up on start
 
-from machine import Pin, I2C
+from machine import Pin, I2C, Timer
 import time
 import math
 import ssd1306 # https://github.com/kwankiu/ssd1306wrap/
@@ -20,6 +19,13 @@ import si5351 # https://github.com/hwstar/Si5351_Micropython
 CLKPin = Pin(26, Pin.IN, Pin.PULL_UP)  # A channel
 DTPin = Pin(27, Pin.IN, Pin.PULL_UP)   # B channel
 SWPin = Pin(28, Pin.IN, Pin.PULL_UP)   # Button (optional)
+
+# Define debounce time (in milliseconds)
+DEBOUNCE_TIME = 500 # 200
+
+# Set up a flag to handle debounce state
+last_pressed_time = 0
+debounce_timer = Timer(-1)
 
 SDAPin = Pin(2)
 SCLPin = Pin(3)
@@ -37,9 +43,11 @@ last_state = CLKPin.value()
 
 start_frequency = 7000000
 min_step_power = 1
-step = int(math.pow(10, min_step_power)) # gets changed by button pushes
-step_power = min_step_power
 max_step_power = 6
+initial_step_power = 3
+step = int(math.pow(10, initial_step_power)) # gets changed by button pushes
+step_power = initial_step_power
+
 
 frequency = start_frequency
 
@@ -104,10 +112,15 @@ def rotary_callback(pin):
 
 # Optional: Detect button press
 def button_callback(pin):
-    #print("Button Pressed!")
     global frequency
-    change_step()
-    oled_display(str(frequency))
+    global last_pressed_time
+
+    current_time = time.ticks_ms()
+    if time.ticks_diff(current_time, last_pressed_time) > DEBOUNCE_TIME:
+        last_pressed_time = current_time
+        print("Switch Pressed")
+        change_step()
+        oled_display(str(frequency))
 
 def setFrequency(newFrequency):
     #print(newFrequency)
@@ -115,4 +128,3 @@ def setFrequency(newFrequency):
         
 if __name__ == "__main__":
     main()
-
