@@ -10,13 +10,16 @@ A Rotary encoder changes frequency and pushing the button changes step.
 
 ![Picture of the prototype](board.JPG "Picture of the board")
 
-Here's how the step size is shown on the display.
+I've started using another board with an integrated sh1106 OLED display and rotary encoder.
 
-![](VFO step selection.mov)
+![Integrated board](monoboard.JPG "Picture of the board")
+
+Code is in monoboard_vfo.py
 
 ## Dependencies
 
 - ssd1306.py from https://github.com/kwankiu/ssd1306wrap/
+- sh1106.py from https://github.com/robert-hh/SH1106
 - si5351.py from https://github.com/hwstar/Si5351_Micropython
 
 ## Wiring
