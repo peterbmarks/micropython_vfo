@@ -1,6 +1,7 @@
 # Si5351 VFO with rotary encoder and OLED display for RP2040 Zero
 # Updated: 20250416
 # Peter, VK3TPM, https://blog.marxy.org
+# https://github.com/peterbmarks/micropython_vfo
 #
 # Uses i2c bus 1 which is SCL=3, SDA=2
 # 
@@ -11,7 +12,6 @@
 from machine import Pin, I2C, Timer
 import time
 import math
-#import ssd1306 # https://github.com/kwankiu/ssd1306wrap/
 import sh1106 # https://github.com/robert-hh/SH1106
 import si5351 # https://github.com/hwstar/Si5351_Micropython
 
@@ -38,10 +38,6 @@ i2c = machine.I2C(1, scl=SCLPin, sda=SDAPin, freq=400000) # 400kHz
 oled = sh1106.SH1106_I2C(128, 64, i2c, rotate=180)
 clkgen = si5351.SI5351(i2c)
 
-# Variables to track position
-encoder_position = 0
-last_state = CLKPin.value()
-
 start_frequency = 7100000
 min_step_power = 1
 max_step_power = 6
@@ -67,7 +63,6 @@ def main():
 
     # Main loop
     while True:
-        #print("Encoder Position:", encoder_position)
         time.sleep(0.5)  # Reduce CPU usage
     
 def change_step():
@@ -97,16 +92,14 @@ def draw_step(step):
                     
 def rotary_callback(pin):
     """Interrupt handler for rotary encoder falling edge"""
-    global encoder_position, frequency
+    global frequency
     if DTPin.value() == 1:
-        encoder_position += 1  # Clockwise
         frequency += int(math.pow(10, step_power))
     else:
-        encoder_position -= 1  # Counterclockwise
         frequency -= int(math.pow(10, step_power))
     setFrequency(frequency)
     oled_display(str(frequency))
-    print(f"Encoder Position: {encoder_position}, Frequency: {frequency}")
+    
 
 
 # Optional: Detect button press
